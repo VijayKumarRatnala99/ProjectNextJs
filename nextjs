@@ -1,0 +1,84 @@
+// components/Gallery.js
+
+import React, { useState, useEffect } from "react";
+import ImageGrid from "./ImageGrid";
+import ImageLightbox from "./ImageLightbox";
+import ImageUploadForm from "./ImageUploadForm";
+import ImageDragAndDrop from "./ImageDragAndDrop";
+import Pagination from "./Pagination";
+
+const Gallery = () => {
+  const [images, setImages] = useState([]);
+  const [filteredImages, setFilteredImages] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [imagesPerPage] = useState(9); // Number of images per page
+
+  useEffect(() => {
+    // Load images from JSON file
+    fetch("/images.json")
+      .then((response) => response.json())
+      .then((data) => {
+        setImages(data);
+        setFilteredImages(data);
+      })
+      .catch((error) => console.error("Error loading images:", error));
+  }, []);
+
+  const handleSearch = (searchTerm) => {
+    // Filter images by description
+    const filtered = images.filter((image) =>
+      image.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredImages(filtered);
+  };
+
+  const handleImageClick = (image) => {
+    // Show lightbox with selected image
+    setSelectedImage(image);
+    setShowLightbox(true);
+  };
+
+  const handleLightboxClose = () => {
+    // Close lightbox
+    setShowLightbox(false);
+  };
+
+  const handleImageUpload = (newImage) => {
+    // Add new image to gallery
+    setImages((prevImages) => [...prevImages, newImage]);
+    setFilteredImages((prevFilteredImages) => [...prevFilteredImages, newImage]);
+  };
+
+  const handleImageDragAndDrop = (reorderedImages) => {
+    // Update image order after drag-and-drop
+    setImages(reorderedImages);
+    setFilteredImages(reorderedImages);
+  };
+
+  const handlePageChange = (pageNumber) => {
+    // Update current page number
+    setCurrentPage(pageNumber);
+  };
+
+  // Calculate index of the first and last image to be displayed on the current page
+  const indexOfLastImage = currentPage * imagesPerPage;
+  const indexOfFirstImage = indexOfLastImage - imagesPerPage;
+  const currentImages = filteredImages.slice(indexOfFirstImage, indexOfLastImage);
+
+  return (
+    <div>
+      <h1>Image Gallery</h1>
+      <button onClick={() => setShowUploadForm(true)}>Upload Image</button>
+      <input
+        type="text"
+        placeholder="Search by description"
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      <ImageGrid images={currentImages} onImageClick={handleImageClick} />
+      {showLightbox && <ImageLightbox image={selectedImage} onClose={handleLightboxClose} />}
+      {showUploadForm && <ImageUploadForm onImageUpload={handleImageUpload} onClose={() => setShowUploadForm(false)} />}
+      <Pagination
+        images
